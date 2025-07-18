@@ -1,9 +1,11 @@
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, Clock, Star, Users } from "lucide-react";
 
 interface CourseBlockProps {
+  id: string;
   title: string;
   description: string;
   progress?: number;
@@ -25,6 +27,7 @@ const categoryColors = {
 };
 
 export function CourseBlock({
+  id,
   title,
   description,
   progress,
@@ -36,12 +39,21 @@ export function CourseBlock({
   isLocked = false,
   onClick
 }: CourseBlockProps) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      navigate(`/course/${id}`);
+    }
+  };
   return (
     <Card 
       className={`group cursor-pointer transition-all duration-300 hover:shadow-course hover:scale-105 bg-course-block border-border/50 ${
         isLocked ? "opacity-60" : ""
       }`}
-      onClick={onClick}
+      onClick={isLocked ? undefined : handleClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">

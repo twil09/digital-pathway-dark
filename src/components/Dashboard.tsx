@@ -23,6 +23,7 @@ interface DashboardProps {
 
 const sampleCourses = [
   {
+    id: "python-fundamentals",
     title: "Python Fundamentals",
     description: "Learn the basics of Python programming with hands-on projects",
     progress: 65,
@@ -34,6 +35,7 @@ const sampleCourses = [
     isLocked: false
   },
   {
+    id: "machine-learning",
     title: "Machine Learning Basics",
     description: "Introduction to ML algorithms and practical applications",
     progress: 30,
@@ -45,6 +47,7 @@ const sampleCourses = [
     isLocked: false
   },
   {
+    id: "ethical-hacking",
     title: "Cybersecurity Fundamentals",
     description: "Essential security concepts and ethical hacking techniques",
     duration: "10 weeks",
@@ -55,6 +58,7 @@ const sampleCourses = [
     isLocked: true
   },
   {
+    id: "ui-ux-design",
     title: "UI/UX Design Principles",
     description: "Create beautiful and user-friendly interfaces",
     duration: "6 weeks",
@@ -65,6 +69,7 @@ const sampleCourses = [
     isLocked: true
   },
   {
+    id: "business-strategy",
     title: "Business Strategy",
     description: "Strategic thinking and business model development",
     duration: "8 weeks",
@@ -75,6 +80,7 @@ const sampleCourses = [
     isLocked: true
   },
   {
+    id: "advanced-react",
     title: "Advanced React Development",
     description: "Deep dive into React patterns and performance optimization",
     duration: "10 weeks",
@@ -217,13 +223,6 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
             <CourseBlock
               key={index}
               {...course}
-              onClick={() => {
-                if (course.isLocked) {
-                  console.log("Show subscription modal");
-                } else {
-                  console.log(`Navigate to course: ${course.title}`);
-                }
-              }}
             />
           ))}
         </div>
