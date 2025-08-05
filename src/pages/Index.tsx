@@ -1,34 +1,30 @@
-import { useState } from "react";
-import { AuthForm } from "@/components/AuthForm";
+import { Navigate } from "react-router-dom";
 import { Dashboard } from "@/components/Dashboard";
-
-interface User {
-  name: string;
-  email: string;
-  role: "student" | "teacher";
-}
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [subscriptionTier] = useState<"free" | "student" | "teacher" | "personal">("free");
+  const { user, userRole, loading } = useAuth();
 
-  const handleAuth = (userData: User) => {
-    setUser(userData);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
-    return <AuthForm onAuth={handleAuth} />;
+    return <Navigate to="/auth" replace />;
   }
 
   return (
     <Dashboard 
-      userRole={user.role}
-      userName={user.name}
-      subscriptionTier={subscriptionTier}
+      userRole={(userRole as 'teacher' | 'student') || 'student'}
+      userName={user.email || 'User'}
+      subscriptionTier="free"
     />
   );
 };
