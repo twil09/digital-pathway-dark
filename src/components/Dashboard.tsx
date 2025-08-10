@@ -3,6 +3,8 @@ import { CourseBlock } from "./CourseBlock";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import { 
   BookOpen, 
   Brain, 
@@ -101,6 +103,8 @@ const subscriptionBadges = {
 
 export function Dashboard({ userRole, userName, subscriptionTier }: DashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   const categories = [
     { id: "coding", name: "Coding", icon: BookOpen, color: "text-blue-400" },
@@ -125,9 +129,19 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`w-10 h-10 rounded-full bg-primary/20 hover:bg-primary/30 transition-colors ${isAdmin ? 'cursor-pointer ring-2 ring-primary/50' : 'cursor-default'}`}
+                  onClick={() => {
+                    if (isAdmin) {
+                      navigate('/admin');
+                    }
+                  }}
+                  disabled={!isAdmin}
+                >
                   <RoleIcon className="w-5 h-5 text-primary" />
-                </div>
+                </Button>
                 <div>
                   <h1 className="text-xl font-bold">Welcome back, {userName}</h1>
                   <div className="flex items-center gap-2">
@@ -137,6 +151,11 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
                     <Badge variant="outline" className={userRole === "student" ? "border-student-accent text-student-accent" : "border-teacher-accent text-teacher-accent"}>
                       {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
                     </Badge>
+                    {isAdmin && (
+                      <Badge variant="outline" className="border-red-500 text-red-500 text-xs">
+                        Admin Access
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>

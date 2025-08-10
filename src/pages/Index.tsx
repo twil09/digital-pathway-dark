@@ -22,9 +22,9 @@ const Index = () => {
 
   return (
     <Dashboard 
-      userRole={(userRole as 'teacher' | 'student') || 'student'}
+      userRole={(userRole?.includes('student') ? 'student' : 'teacher')}
       userName={user.email || 'User'}
-      subscriptionTier="free"
+      subscriptionTier={userRole?.includes('premium') ? 'teacher' : 'free'}
     />
   );
 };
