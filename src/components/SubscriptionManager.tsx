@@ -6,11 +6,30 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Crown, Check, Star, Shield } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 
 export function SubscriptionManager() {
   const { user, session, userRole, subscriptionTier, checkSubscription } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+
+  const getPrice = (tier: string) => {
+    if (tier === 'free_student' || tier === 'free_teacher') return 'Free';
+    
+    const prices = {
+      premium_student: {
+        monthly: '£5.99/month',
+        annual: '£50/year'
+      },
+      premium_teacher: {
+        monthly: '£7.99/month', 
+        annual: '£75/year'
+      }
+    };
+    
+    return prices[tier as keyof typeof prices]?.[billingCycle] || 'Free';
+  };
 
   const subscriptionPlans = [
     {
@@ -19,7 +38,7 @@ export function SubscriptionManager() {
       price: 'Free',
       description: 'Basic access to selected courses',
       features: [
-        'Access to 3 basic courses',
+        'Access to 5 basic courses',
         'Community support',
         'Basic progress tracking'
       ],
@@ -29,7 +48,7 @@ export function SubscriptionManager() {
     {
       tier: 'premium_student',
       name: 'Premium Student',
-      price: '$9.99/month',
+      price: getPrice('premium_student'),
       description: 'Full access to all courses and premium features',
       features: [
         'Unlimited course access',
@@ -58,7 +77,7 @@ export function SubscriptionManager() {
     {
       tier: 'premium_teacher',
       name: 'Premium Teacher',
-      price: '$19.99/month',
+      price: getPrice('premium_teacher'),
       description: 'Unlimited classes and advanced features',
       features: [
         'Unlimited classes',
@@ -86,7 +105,10 @@ export function SubscriptionManager() {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { tier: planTier },
+        body: { 
+          tier: planTier,
+          billingCycle: billingCycle
+        },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -148,6 +170,32 @@ export function SubscriptionManager() {
         <p className="text-muted-foreground mt-2">
           Upgrade your learning experience with premium features
         </p>
+        
+        {/* Billing Toggle */}
+        <div className="mt-6 inline-flex items-center gap-4 p-1 bg-muted rounded-lg">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              billingCycle === 'monthly'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBillingCycle('annual')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              billingCycle === 'annual'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Annual
+            <Badge className="ml-2 bg-green-500 text-white text-xs">Save 30%</Badge>
+          </button>
+        </div>
+        
         <div className="mt-4">
           <Button
             onClick={checkSubscription}

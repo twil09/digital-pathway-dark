@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { SettingsMenu } from "./SettingsMenu";
 import { 
   BookOpen, 
   Brain, 
@@ -14,7 +15,9 @@ import {
   Settings, 
   User,
   Crown,
-  GraduationCap
+  GraduationCap,
+  UserCheck,
+  Plus
 } from "lucide-react";
 
 interface DashboardProps {
@@ -103,7 +106,8 @@ const subscriptionBadges = {
 
 export function Dashboard({ userRole, userName, subscriptionTier }: DashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const { isAdmin } = useAuth();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { isAdmin, userRole: authUserRole } = useAuth();
   const navigate = useNavigate();
 
   const categories = [
@@ -118,8 +122,12 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
     ? sampleCourses.filter(course => course.category === selectedCategory)
     : sampleCourses;
 
-  const roleIcon = userRole === "student" ? GraduationCap : User;
-  const RoleIcon = roleIcon;
+  const getRoleIcon = () => {
+    if (authUserRole === 'super_admin' || authUserRole === 'admin') return Shield;
+    if (authUserRole === 'premium_teacher' || authUserRole === 'free_teacher') return UserCheck;
+    return GraduationCap;
+  };
+  const RoleIcon = getRoleIcon();
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,7 +136,7 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -162,10 +170,28 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
             </div>
             
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon">
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative"
+                  onClick={() => navigate('/admin')}
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              )}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setSettingsOpen(true)}
+              >
                 <Settings className="w-5 h-5" />
               </Button>
-              <Button variant="premium" className="gap-2">
+              <Button 
+                variant="premium" 
+                className="gap-2"
+                onClick={() => navigate('/subscription')}
+              >
                 <Crown className="w-4 h-4" />
                 Upgrade
               </Button>
@@ -254,7 +280,12 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
                   <h3 className="text-lg font-semibold">Unlock Full Access</h3>
                   <p className="text-muted-foreground">Get unlimited access to all courses and premium features</p>
                 </div>
-                <Button variant="premium" size="lg" className="gap-2">
+                <Button 
+                  variant="premium" 
+                  size="lg" 
+                  className="gap-2"
+                  onClick={() => navigate('/subscription')}
+                >
                   <Crown className="w-4 h-4" />
                   Upgrade Now
                 </Button>
@@ -263,6 +294,11 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
           </Card>
         )}
       </div>
+      
+      <SettingsMenu 
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   );
 }
