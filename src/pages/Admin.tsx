@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
+import { AdminPinEntry } from '@/components/admin/AdminPinEntry';
 
 export default function Admin() {
   const { user, userRole, loading } = useAuth();
+  const [pinVerified, setPinVerified] = useState(false);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -13,7 +16,7 @@ export default function Admin() {
     return <Navigate to="/auth" replace />;
   }
 
-  if (userRole !== 'admin' && userRole !== 'teacher') {
+  if (userRole !== 'super_admin' && userRole !== 'admin' && userRole !== 'premium_teacher' && userRole !== 'free_teacher') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -22,6 +25,10 @@ export default function Admin() {
         </div>
       </div>
     );
+  }
+
+  if (!pinVerified) {
+    return <AdminPinEntry onPinVerified={() => setPinVerified(true)} />;
   }
 
   return <AdminDashboard />;
