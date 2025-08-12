@@ -163,11 +163,13 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_pin: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
           max_classes: number | null
+          pin_set_at: string | null
           role: Database["public"]["Enums"]["app_role"]
           stripe_customer_id: string | null
           subscription_end: string | null
@@ -177,11 +179,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_pin?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
           max_classes?: number | null
+          pin_set_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           stripe_customer_id?: string | null
           subscription_end?: string | null
@@ -191,11 +195,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_pin?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
           max_classes?: number | null
+          pin_set_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           stripe_customer_id?: string | null
           subscription_end?: string | null
