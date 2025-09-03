@@ -88,6 +88,7 @@ export type Database = {
           difficulty: string
           duration: string | null
           id: string
+          is_premium: boolean
           title: string
           updated_at: string
         }
@@ -99,6 +100,7 @@ export type Database = {
           difficulty: string
           duration?: string | null
           id?: string
+          is_premium?: boolean
           title: string
           updated_at?: string
         }
@@ -110,6 +112,7 @@ export type Database = {
           difficulty?: string
           duration?: string | null
           id?: string
+          is_premium?: boolean
           title?: string
           updated_at?: string
         }

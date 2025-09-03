@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CourseBlock } from "./CourseBlock";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { SettingsMenu } from "./SettingsMenu";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   BookOpen, 
   Brain, 
@@ -26,76 +28,7 @@ interface DashboardProps {
   subscriptionTier: "free" | "student" | "teacher" | "personal";
 }
 
-const sampleCourses = [
-  {
-    id: "python-fundamentals",
-    title: "Python Fundamentals",
-    description: "Learn the basics of Python programming with hands-on projects",
-    progress: 65,
-    duration: "8 weeks",
-    difficulty: "Beginner" as const,
-    students: 12450,
-    rating: 4.8,
-    category: "coding" as const,
-    isLocked: false
-  },
-  {
-    id: "machine-learning",
-    title: "Machine Learning Basics",
-    description: "Introduction to ML algorithms and practical applications",
-    progress: 30,
-    duration: "12 weeks", 
-    difficulty: "Intermediate" as const,
-    students: 8230,
-    rating: 4.9,
-    category: "ai" as const,
-    isLocked: false
-  },
-  {
-    id: "ethical-hacking",
-    title: "Cybersecurity Fundamentals",
-    description: "Essential security concepts and ethical hacking techniques",
-    duration: "10 weeks",
-    difficulty: "Beginner" as const,
-    students: 5670,
-    rating: 4.7,
-    category: "cybersecurity" as const,
-    isLocked: true
-  },
-  {
-    id: "ui-ux-design",
-    title: "UI/UX Design Principles",
-    description: "Create beautiful and user-friendly interfaces",
-    duration: "6 weeks",
-    difficulty: "Beginner" as const,
-    students: 9840,
-    rating: 4.6,
-    category: "design" as const,
-    isLocked: true
-  },
-  {
-    id: "business-strategy",
-    title: "Business Strategy",
-    description: "Strategic thinking and business model development",
-    duration: "8 weeks",
-    difficulty: "Advanced" as const,
-    students: 3250,
-    rating: 4.5,
-    category: "business" as const,
-    isLocked: true
-  },
-  {
-    id: "advanced-react",
-    title: "Advanced React Development",
-    description: "Deep dive into React patterns and performance optimization",
-    duration: "10 weeks",
-    difficulty: "Advanced" as const,
-    students: 6780,
-    rating: 4.9,
-    category: "coding" as const,
-    isLocked: true
-  }
-];
+// This will be replaced with real courses from the database
 
 const subscriptionBadges = {
   free: { label: "Free", color: "bg-muted text-muted-foreground" },
@@ -107,20 +40,64 @@ const subscriptionBadges = {
 export function Dashboard({ userRole, userName, subscriptionTier }: DashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const { isAdmin, userRole: authUserRole } = useAuth();
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { isAdmin, userRole: authUserRole, subscriptionTier: userSubscriptionTier } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Transform database courses to match the expected format
+      const transformedCourses = (data || []).map(course => ({
+        id: course.id,
+        title: course.title,
+        description: course.description || "",
+        duration: course.duration || "Not specified",
+        difficulty: course.difficulty || "Beginner",
+        category: course.category || "general",
+        students: Math.floor(Math.random() * 10000) + 1000, // Mock data
+        rating: (Math.random() * 0.5 + 4.5).toFixed(1), // Mock rating between 4.5-5.0
+        progress: Math.floor(Math.random() * 100), // Mock progress
+        isLocked: course.is_premium && userSubscriptionTier !== 'premium' && userSubscriptionTier !== 'teacher'
+      }));
+      
+      setCourses(transformedCourses);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching courses",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categories = [
-    { id: "coding", name: "Coding", icon: BookOpen, color: "text-blue-400" },
-    { id: "ai", name: "AI & ML", icon: Brain, color: "text-purple-400" },
-    { id: "cybersecurity", name: "Cybersecurity", icon: Shield, color: "text-red-400" },
+    { id: "programming", name: "Programming", icon: BookOpen, color: "text-blue-400" },
     { id: "design", name: "Design", icon: Palette, color: "text-green-400" },
-    { id: "business", name: "Business", icon: Briefcase, color: "text-orange-400" }
+    { id: "marketing", name: "Marketing", icon: Brain, color: "text-purple-400" },
+    { id: "business", name: "Business", icon: Briefcase, color: "text-orange-400" },
+    { id: "science", name: "Science", icon: Shield, color: "text-red-400" },
+    { id: "mathematics", name: "Mathematics", icon: BookOpen, color: "text-cyan-400" }
   ];
 
   const filteredCourses = selectedCategory 
-    ? sampleCourses.filter(course => course.category === selectedCategory)
-    : sampleCourses;
+    ? courses.filter(course => course.category === selectedCategory)
+    : courses;
 
   const getRoleIcon = () => {
     if (authUserRole === 'super_admin' || authUserRole === 'admin') return Shield;
@@ -263,14 +240,34 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
         </div>
 
         {/* Course Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map((course, index) => (
-            <CourseBlock
-              key={index}
-              {...course}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-6">
+                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-muted rounded w-full mb-4"></div>
+                  <div className="h-3 bg-muted rounded w-1/2"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : courses.length === 0 ? (
+          <Card className="p-8 text-center">
+            <CardContent>
+              <p className="text-muted-foreground">No courses available yet. {isAdmin && "Create your first course in the admin panel!"}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCourses.map((course, index) => (
+              <CourseBlock
+                key={course.id}
+                {...course}
+              />
+            ))}
+          </div>
+        )}
 
         {subscriptionTier === "free" && (
           <Card className="mt-8 border-primary/20 bg-premium-gradient/10">
