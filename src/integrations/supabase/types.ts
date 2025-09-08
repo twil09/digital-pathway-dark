@@ -462,12 +462,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_admin_pin: {
+        Args: { pin_text: string }
+        Returns: string
+      }
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
       }
       is_teacher: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      verify_admin_pin: {
+        Args: { hashed_pin: string; pin_text: string }
         Returns: boolean
       }
     }
