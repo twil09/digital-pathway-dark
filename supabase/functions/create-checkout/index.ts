@@ -7,6 +7,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper logging function
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -18,62 +24,85 @@ serve(async (req) => {
   );
 
   try {
+    logStep("Function started");
+
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
-    const { tier } = await req.json();
+    logStep("User authenticated", { userId: user.id, email: user.email });
+
+    const { tier, billingCycle } = await req.json();
+    logStep("Request data", { tier, billingCycle });
     
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
       apiVersion: "2023-10-16" 
     });
+    logStep("Stripe initialized");
     
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
     }
+    logStep("Customer lookup", { customerId });
 
+    // Map tiers to Stripe Price IDs
+    // YOU NEED TO REPLACE THESE WITH YOUR ACTUAL STRIPE PRICE IDs
     const priceMap = {
-      premium_student: { amount: 999, name: "Premium Student Plan" },
-      premium_teacher: { amount: 1999, name: "Premium Teacher Plan" },
-      admin: { amount: 4999, name: "Admin Plan" }
+      premium_student: {
+        monthly: "price_1234567890_monthly_student", // Replace with your actual Stripe Price ID
+        annual: "price_1234567890_annual_student"    // Replace with your actual Stripe Price ID
+      },
+      premium_teacher: {
+        monthly: "price_1234567890_monthly_teacher", // Replace with your actual Stripe Price ID  
+        annual: "price_1234567890_annual_teacher"    // Replace with your actual Stripe Price ID
+      }
     };
 
-    const selectedPlan = priceMap[tier as keyof typeof priceMap];
-    if (!selectedPlan) throw new Error("Invalid subscription tier");
+    const selectedTier = priceMap[tier as keyof typeof priceMap];
+    if (!selectedTier) {
+      throw new Error(`Invalid subscription tier: ${tier}`);
+    }
+
+    const priceId = selectedTier[billingCycle as keyof typeof selectedTier];
+    if (!priceId) {
+      throw new Error(`Invalid billing cycle: ${billingCycle} for tier: ${tier}`);
+    }
+
+    logStep("Price mapping", { tier, billingCycle, priceId });
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: { name: selectedPlan.name },
-            unit_amount: selectedPlan.amount,
-            recurring: { interval: "month" },
-          },
+          price: priceId, // Use the actual Stripe Price ID
           quantity: 1,
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/subscription-success?tier=${tier}`,
-      cancel_url: `${req.headers.get("origin")}/subscription-cancelled`,
+      success_url: `${req.headers.get("origin")}/subscription?success=true&tier=${tier}&billing=${billingCycle}`,
+      cancel_url: `${req.headers.get("origin")}/subscription?cancelled=true`,
       metadata: {
         user_id: user.id,
-        tier: tier
+        tier: tier,
+        billing_cycle: billingCycle
       }
     });
+
+    logStep("Checkout session created", { sessionId: session.id });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("ERROR", { message: errorMessage });
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
