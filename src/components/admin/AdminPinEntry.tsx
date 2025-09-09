@@ -32,6 +32,15 @@ export function AdminPinEntry({ onPinVerified }: AdminPinEntryProps) {
     setIsFirstTime(!data?.admin_pin);
   };
 
+  // Simple hash function for PIN security
+  const hashPin = async (pin: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pin + "salt_key_" + pin);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -52,10 +61,11 @@ export function AdminPinEntry({ onPinVerified }: AdminPinEntryProps) {
           return;
         }
 
+        const hashedPin = await hashPin(newPin);
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ 
-            admin_pin: newPin,
+            admin_pin: hashedPin,
             pin_set_at: new Date().toISOString()
           })
           .eq('user_id', user?.id);
@@ -70,7 +80,8 @@ export function AdminPinEntry({ onPinVerified }: AdminPinEntryProps) {
           .eq('user_id', user?.id)
           .single();
 
-        if (data?.admin_pin === pin) {
+        const hashedInputPin = await hashPin(pin);
+        if (data?.admin_pin === hashedInputPin) {
           onPinVerified();
         } else {
           setError('Incorrect pin');

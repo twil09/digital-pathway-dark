@@ -58,7 +58,16 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Course fetch error:', error);
+        // If access is denied due to RLS, show empty courses for non-authenticated users
+        if (error.code === 'PGRST301') {
+          setCourses([]);
+          setLoading(false);
+          return;
+        }
+        throw error;
+      }
       
       // Transform database courses to match the expected format
       const transformedCourses = (data || []).map(course => ({
@@ -76,9 +85,11 @@ export function Dashboard({ userRole, userName, subscriptionTier }: DashboardPro
       
       setCourses(transformedCourses);
     } catch (error: any) {
+      console.error('Error fetching courses:', error);
+      setCourses([]);
       toast({
         title: "Error fetching courses",
-        description: error.message,
+        description: "Unable to load courses. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
